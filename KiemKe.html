@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
 
-  <!-- ICON -->
-  <link rel="apple-touch-icon" href="icon.png">
-
-  <title>Kiểm Kê</title>
+<link rel="apple-touch-icon" href="icon.png">
+<title>Kiểm Kê</title>
 
 <style>
 body {
@@ -32,7 +30,6 @@ h2 {
     margin: 6px 0 14px;
 }
 
-/* CONTROL BAR */
 .control-bar {
     display: flex;
     justify-content: space-between;
@@ -69,10 +66,9 @@ h2 {
 
 .ctrl-btn:active { transform: scale(0.92); }
 
-/* ROW */
 .row {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto auto auto;
     align-items: center;
     gap: 8px;
     padding: 10px 0;
@@ -84,11 +80,10 @@ h2 {
     color: #2e7d32;
 }
 
-/* INPUT FIX ZOOM */
 input {
     width: 70px;
     height: 34px;
-    font-size: 16px; /* QUAN TRỌNG: CHỐNG iOS ZOOM */
+    font-size: 16px;
     border-radius: 8px;
     border: 1.5px solid #a5d6a7;
     background: #f1f8e9;
@@ -107,20 +102,18 @@ input {
 }
 
 .total {
-    width: 36px;
+    min-width: 90px;
     text-align: right;
     font-weight: bold;
     font-size: 18px;
     color: #1b5e20;
 }
 
-/* DASH LINE */
 .hr {
     border-bottom: 2px dashed #c8e6c9;
     margin: 4px 0;
 }
 
-/* SUMMARY */
 .summary {
     background: #f1f8e9;
     border-radius: 14px;
@@ -150,11 +143,10 @@ input {
 <div class="summary">
 <p>Tổng cộng: <b id="grand">0</b></p>
 <p>Tồn hệ thống:
-<input type="number" inputmode="numeric" pattern="[0-9]*" id="system" oninput="calcDiff()">
+<input type="number" inputmode="numeric" id="system" oninput="calcDiff()">
 </p>
 <p>Chênh lệch: <b id="diff">—</b></p>
 </div>
-
 </div>
 
 <script>
@@ -168,49 +160,98 @@ const items = [
 
 let history=[], future=[];
 
-function save(){ history.push(document.body.innerHTML); future=[]; }
-function restore(s){ document.body.innerHTML=s; }
-function undo(){ if(history.length){ future.push(document.body.innerHTML); restore(history.pop()); } }
-function redo(){ if(future.length){ history.push(document.body.innerHTML); restore(future.pop()); } }
-function resetAll(){ location.reload(); }
+function save(){
+    history.push(document.body.innerHTML);
+    future=[];
+}
 
-function add(id,f){
- save();
- let i=document.getElementById(id);
- let v=Number(i.value||0)*f;
- document.getElementById('t_'+id).innerText=v;
- i.value='';
- calcTotal();
+function restore(s){
+    document.body.innerHTML=s;
+}
+
+function undo(){
+    if(history.length){
+        future.push(document.body.innerHTML);
+        restore(history.pop());
+    }
+}
+
+function redo(){
+    if(future.length){
+        history.push(document.body.innerHTML);
+        restore(future.pop());
+    }
+}
+
+/* ✅ RESET AN TOÀN – KHÔNG RELOAD */
+function resetAll(){
+    if(!confirm("Reset toàn bộ dữ liệu?")) return;
+
+    document.querySelectorAll("input").forEach(i => i.value = "");
+    document.querySelectorAll(".total").forEach(t => t.innerText = "0");
+
+    grand.innerText = "0";
+    diff.innerText = "—";
+    diff.style.color = "#1565c0";
+
+    history = [];
+    future = [];
+}
+
+/* ✅ CỘNG DỒN ĐÚNG */
+function add(id, f){
+    save();
+
+    const input = document.getElementById(id);
+    const totalEl = document.getElementById('t_'+id);
+
+    const added = Number(input.value || 0) * f;
+    const current = Number(totalEl.innerText || 0);
+
+    totalEl.innerText = current + added;
+    input.value = '';
+
+    calcTotal();
 }
 
 function calcTotal(){
- let s=0;
- document.querySelectorAll('.total').forEach(e=>s+=Number(e.innerText));
- document.getElementById('grand').innerText=s;
- calcDiff();
+    let sum = 0;
+    document.querySelectorAll('.total').forEach(e=>{
+        sum += Number(e.innerText || 0);
+    });
+    grand.innerText = sum;
+    calcDiff();
 }
 
 function calcDiff(){
- let t=Number(grand.innerText);
- let s=Number(system.value||0);
- let d=t-s;
- let el=diff;
- if(d>0){ el.innerText='Dư '+d; el.style.color='#2e7d32'; }
- else if(d<0){ el.innerText='Thiếu '+Math.abs(d); el.style.color='#c62828'; }
- else{ el.innerText='Đủ'; el.style.color='#1565c0'; }
+    let t = Number(grand.innerText);
+    let s = Number(system.value || 0);
+    let d = t - s;
+
+    if(d > 0){
+        diff.innerText = 'Dư ' + d;
+        diff.style.color = '#2e7d32';
+    } else if(d < 0){
+        diff.innerText = 'Thiếu ' + Math.abs(d);
+        diff.style.color = '#c62828';
+    } else {
+        diff.innerText = 'Đủ';
+        diff.style.color = '#1565c0';
+    }
 }
 
-const rows=document.getElementById('rows');
+/* RENDER ROW */
+const rows = document.getElementById('rows');
 items.forEach((it,i)=>{
- rows.innerHTML+=`
- <div class="row">
-  <div class="label">${it.label}</div>
-  <input type="number" inputmode="numeric" pattern="[0-9]*" id="${it.id}">
-  <button class="plus" onclick="add('${it.id}',${it.f})">+</button>
-  <div class="total" id="t_${it.id}">0</div>
- </div>
- ${i<items.length-1?'<div class="hr"></div>':''}
- `;
+    rows.innerHTML += `
+    <div class="row">
+        <div class="label">${it.label}</div>
+        <input type="number" inputmode="numeric" id="${it.id}">
+        <button class="plus" onclick="add('${it.id}',${it.f})">+</button>
+        <div class="total" id="t_${it.id}">0</div>
+    </div>
+    ${i < items.length-1 ? '<div class="hr"></div>' : ''}
+    `;
 });
 </script>
 </body>
